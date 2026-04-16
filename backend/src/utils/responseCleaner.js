@@ -132,6 +132,7 @@ function cleanResponse(rawText) {
     { regex: /\bkriya\b/gi, replacement: "kaam" },
     { regex: /\bshubh\b/gi, replacement: "achha" },
     { regex: /\bdhanyawad\b/gi, replacement: "shukria" },
+    { regex: /\bdhanyavad\b/gi, replacement: "shukria" },
     { regex: /\bnamaste\b/gi, replacement: "hello" },
     { regex: /\bshukrana\b/gi, replacement: "" },
     { regex: /\bitma'nan\b/gi, replacement: "" },
