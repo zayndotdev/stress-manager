@@ -15,16 +15,21 @@ const { cleanResponse } = require("../utils/responseCleaner");
 const logger = require("../utils/logger");
 
 const chat = async (req, res) => {
-  const userMessage =
-    typeof req.body?.userMessage === "string"
-      ? req.body.userMessage.trim()
-      : "";
-
-  if (!userMessage) {
-    return res.status(400).json({ error: "userMessage is required" });
-  }
-
   try {
+    const { userMessage } = req.body;
+
+    // --- Safety Valve (V13): Handle empty/whitespace inputs ---
+    if (!userMessage || userMessage.trim().length === 0) {
+      logger.warn("[API] Empty user message received. Sending nudge.");
+      return res.json({
+        botResponse: "Main sun raha hoon. Kya aap kuch batana chahte hain?",
+        state: {
+          phase: getPhase(),
+          questionCount: getQuestionCount(),
+        },
+      });
+    }
+
     logger.info(`\n[API] POST /api/chat - Incoming: "${userMessage}"`);
     addMessage("user", userMessage);
 
