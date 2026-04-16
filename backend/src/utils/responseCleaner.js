@@ -108,10 +108,74 @@ function cleanResponse(rawText) {
     text = text.substring(0, MAX_RESPONSE_CHARS - 1).trim() + "?";
   }
 
+  // --- Precision Guards (V9.0) ---
+  
+  // 1. The "Sentence Axe": Discard everything after the FIRST question mark.
+  // This guarantees brevity regardless of model rambling.
+  const questionIndex = text.indexOf("?");
+  if (questionIndex !== -1) {
+    text = text.substring(0, questionIndex + 1).trim();
+  }
+
+  // 2. Pronoun & Hindi Blacklist (V11.0)
+  const pronounSwaps = [
+    { regex: /\btumhe\b/gi, replacement: "aapko" },
+    { regex: /\btujhe\b/gi, replacement: "aapko" },
+    { regex: /\btum\b/gi, replacement: "aap" },
+    { regex: /\btu\b/gi, replacement: "aap" },
+    { regex: /\btera\b/gi, replacement: "aapka" },
+    { regex: /\bteri\b/gi, replacement: "aapki" },
+    { regex: /\bswagat\b/gi, replacement: "Khush Amdeed" },
+    { regex: /\bvishwaas\b/gi, replacement: "yaqeen" },
+    { regex: /\bvishwas\b/gi, replacement: "yaqeen" },
+    { regex: /\bsahyog\b/gi, replacement: "madad" },
+    { regex: /\bkriya\b/gi, replacement: "kaam" },
+    { regex: /\bshubh\b/gi, replacement: "achha" },
+    { regex: /\bdhanyawad\b/gi, replacement: "shukria" },
+    { regex: /\bnamaste\b/gi, replacement: "hello" },
+    { regex: /\bshukrana\b/gi, replacement: "" },
+    { regex: /\bitma'nan\b/gi, replacement: "" },
+    { regex: /\bitmanan\b/gi, replacement: "" },
+  ];
+  
+  pronounSwaps.forEach((rule) => {
+    text = text.replace(rule.regex, rule.replacement);
+  });
+
+  // Final Cleanup
+  text = text.replace(/\s+/g, " ").trim();
+  
+  // Capitalize first letter
+  if (text.length > 0) {
+    text = text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  // Ensure ends with ?
+  if (!text.endsWith("?")) {
+    text = text.replace(/[.!,;:\s]+$/, "") + "?";
+  }
+
   logger.info(
-    `[CLEAN] Applied cleaning rules. Result length: ${text.length} chars (max ${MAX_RESPONSE_CHARS}).`,
+    `[CLEAN] V10 Precision Clean complete. Result: "${text}"`,
   );
   return text;
 }
 
-module.exports = { cleanResponse };
+/**
+ * Heuristic to detect if a response is primarily English.
+ */
+function isEnglishContent(text) {
+  if (!text) return false;
+  const englishTriggerWords = [
+    "the", "is", "are", "you", "your", "should", "advice", "trust", 
+    "confide", "stress", "causing", "helpful", "talk", "about"
+  ];
+  
+  const words = text.toLowerCase().split(/\s+/);
+  const engCount = words.filter(w => englishTriggerWords.includes(w.replace(/[^a-z]/g, ""))).length;
+  
+  // If > 20% of words are English trigger words, it's likely English clinical hallucination.
+  return (engCount / words.length) > 0.2;
+}
+
+module.exports = { cleanResponse, isEnglishContent };

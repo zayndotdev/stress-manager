@@ -33,12 +33,21 @@ const DISTRESS_KEYWORDS = [
   "dar",
   "khof",
   "tabiyat",
+  "preshan",
 ];
+
+const CONFUSION_KEYWORDS = ["pata nahi", "nhi pta", "nahi pta", "nhi pata", "maloom nahi", "confused", "samajh nahi"];
 
 function detectDistress(text) {
   if (!text) return false;
   const lowerText = text.toLowerCase();
   return DISTRESS_KEYWORDS.some((word) => lowerText.includes(word));
+}
+
+function detectConfusion(text) {
+  if (!text) return false;
+  const lowerText = text.toLowerCase();
+  return CONFUSION_KEYWORDS.some((word) => lowerText.includes(word));
 }
 
 function addMessage(role, content) {
@@ -71,9 +80,17 @@ function incrementQuestion() {
 
 function getPhase() {
   const qCount = state.questionCount;
+  const lastUserMsg = state.messages
+    .filter((m) => m.role === "user")
+    .slice(-1)[0]?.content;
+
+  // Confusion Buffer: If user says "Pata nahi", stay in EXPLORE to help them find clarity.
+  if (detectConfusion(lastUserMsg) && qCount <= 8) {
+    logger.info("[STATE] 🌀 User is confused. Holding EXPLORE phase.");
+    return "EXPLORE";
+  }
 
   // Social Buffer: If no distress detected, stay in EXPLORE (Social) mode until Turn 6.
-  // If distress IS detected, move to UNDERSTAND after Turn 3.
   if (state.distressDetected) {
     if (qCount <= 3) return "EXPLORE";
     if (qCount <= 6) return "UNDERSTAND";
@@ -81,7 +98,7 @@ function getPhase() {
   } else {
     // No distress detected - keep it social longer.
     if (qCount <= 6) return "EXPLORE";
-    return "SUGGEST"; // Even if just chatting, after turn 6 we move to a light suggest (Phase 3)
+    return "SUGGEST";
   }
 }
 
@@ -115,6 +132,10 @@ function resetState() {
   logger.info(`[STATE] Conversation state has been reset to defaults`);
 }
 
+function isDistressDetected() {
+  return state.distressDetected;
+}
+
 module.exports = {
   addMessage,
   incrementQuestion,
@@ -123,4 +144,5 @@ module.exports = {
   getHistory,
   getQuestionCount,
   resetState,
+  isDistressDetected,
 };

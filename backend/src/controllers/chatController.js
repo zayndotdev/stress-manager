@@ -6,6 +6,7 @@ const {
   getHistory,
   getQuestionCount,
   resetState,
+  isDistressDetected,
 } = require("../services/conversationManager");
 const { buildPrompt } = require("../utils/promptBuilder");
 const { callMistral } = require("../services/llmCaller");
@@ -36,17 +37,36 @@ const chat = async (req, res) => {
     logger.info(
       `[PROMPT] Building prompt with history of ${history.length} messages...`,
     );
-    const fullPrompt = buildPrompt(history, currentPhase);
+    const distressActive = isDistressDetected();
+    const fullPrompt = buildPrompt(history, currentPhase, distressActive);
+
+    const { analyzeResponse } = require("../utils/responseAnalyzer");
 
     logger.info(`[LLM] Calling Mistral...`);
-    const rawBotResponse = await callMistral(fullPrompt);
+    let rawBotResponse = await callMistral(fullPrompt);
+    let cleanedResponse = cleanResponse(rawBotResponse);
 
-    // Clean response: strip translations, enforce length, guarantee question mark
-    logger.info(
-      `[CLEAN] Raw Response: "${rawBotResponse.substring(0, 50)}${rawBotResponse.length > 50 ? "..." : ""}"`,
-    );
-    const cleanedResponse = cleanResponse(rawBotResponse);
-    logger.info(`[CLEAN] Cleaned Response: "${cleanedResponse}"`);
+    // --- Zero-Tolerance Global Shield (V11.0) ---
+    const analysis = analyzeResponse(cleanedResponse);
+    if (analysis.isEnglish) {
+      logger.warn(`[SHIELD] English detected (Score: ${analysis.score}). Triggering silent retry...`);
+      const retryPrompt = `${fullPrompt}\n\nERROR: Aapne English mein jawab diya. Is response ko foran ROMAN URDU mein translate karo:\n"${cleanedResponse}"\n\nSakoon:`;
+      rawBotResponse = await callMistral(retryPrompt);
+      cleanedResponse = cleanResponse(rawBotResponse);
+
+      // Final Check after retry
+      const postRetryAnalysis = analyzeResponse(cleanedResponse);
+      if (postRetryAnalysis.isEnglish) {
+        logger.error("[SHIELD] Retry failed. Using sentiment-ware fallback.");
+        // Simple Sentiment Logic: If user was positive, say khushi hui. Else say samajh raha hoon.
+        const lastUserMsg = history.filter(m => m.role === 'user').slice(-1)[0]?.content.toLowerCase() || "";
+        if (lastUserMsg.includes("thk") || lastUserMsg.includes("acha") || lastUserMsg.includes("good")) {
+          cleanedResponse = "Sun kar khushi hui. Aur batayein, aaj ka din kaisa guzra?";
+        } else {
+          cleanedResponse = "Main samajh sakta hoon ke ye mushkil hai. Kya aap batana chahenge ke dil mein kaisa mehsoos ho raha hai?";
+        }
+      }
+    }
 
     const validationResult = validateResponse(cleanedResponse);
     if (!validationResult.valid) {

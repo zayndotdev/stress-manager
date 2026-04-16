@@ -13,7 +13,7 @@ const OLLAMA_TIMEOUT_MS = readNumberEnv("OLLAMA_TIMEOUT_MS", 180000);
 const OLLAMA_OPTIONS = {
   temperature: readNumberEnv("OLLAMA_TEMPERATURE", 0.4),
   top_p: readNumberEnv("OLLAMA_TOP_P", 0.8),
-  repeat_penalty: readNumberEnv("OLLAMA_REPEAT_PENALTY", 1.15),
+  repeat_penalty: readNumberEnv("OLLAMA_REPEAT_PENALTY", 1.18),
   num_predict: Math.round(readNumberEnv("OLLAMA_NUM_PREDICT", 120)),
 };
 
