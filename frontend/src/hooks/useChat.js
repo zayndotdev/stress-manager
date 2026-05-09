@@ -1,85 +1,145 @@
-import { useState, useCallback } from "react";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
-const apiUrl = (path) => `${API_BASE_URL}${path}`;
+import { useState, useCallback, useEffect } from "react";
+import { api } from "@/lib/api";
 
 const useChat = () => {
+  const [conversations, setConversations] = useState([]);
+  const [activeConversationId, setActiveConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentPhase, setCurrentPhase] = useState("EXPLORE");
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
 
-  const sendMessage = useCallback(async (text) => {
-    if (!text.trim()) return;
+  // Load conversation list on mount
+  useEffect(() => {
+    loadConversations();
+  }, []);
 
-    // 1. Add user message to state
-    const userMsg = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
-
+  const loadConversations = useCallback(async () => {
     try {
-      console.log(`[useChat] Sending message: "${text}"`);
-      // 2. Call backend API
-      const response = await fetch(apiUrl("/api/chat"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userMessage: text }),
-      });
-
-      if (!response.ok) {
-        console.error(
-          `[useChat] API error: ${response.status} ${response.statusText}`,
-        );
-        throw new Error("Network error");
-      }
-
-      const data = await response.json();
-      console.log(
-        `[useChat] Received response. Phase: ${data.phase}, Count: ${data.questionCount}`,
-      );
-
-      // 3. Add bot message and update status
-      setMessages((prev) => [
-        ...prev,
-        { role: "bot", content: data.botResponse },
-      ]);
-      setCurrentPhase(data.phase);
-    } catch (error) {
-      console.error("[useChat] Error in chat flow:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "bot",
-          content:
-            "Maaf karna yaar, server mein thoda masla aa gaya hai. Phir se koshish karoge?",
-        },
-      ]);
+      setIsLoadingConversations(true);
+      const data = await api.listConversations();
+      setConversations(data.conversations || []);
+    } catch (err) {
+      console.error("[useChat] Failed to load conversations:", err);
     } finally {
-      setIsLoading(false);
+      setIsLoadingConversations(false);
     }
   }, []);
 
-  const resetChat = useCallback(async () => {
+  const selectConversation = useCallback(async (id) => {
     try {
-      console.log("[useChat] Resetting chat...");
-      const response = await fetch(apiUrl("/api/reset"));
-      if (!response.ok) {
-        throw new Error(`Reset failed with status ${response.status}`);
-      }
-      console.log("[useChat] Chat reset successful.");
-      setMessages([]);
-      setCurrentPhase("EXPLORE");
-    } catch (error) {
-      console.error("[useChat] Reset Error:", error);
+      const data = await api.getConversation(id);
+      setActiveConversationId(id);
+      setMessages(
+        (data.messages || []).map((m) => ({
+          role: m.role,
+          content: m.content,
+          timestamp: m.created_at,
+        }))
+      );
+      setCurrentPhase(data.conversation?.phase || "EXPLORE");
+    } catch (err) {
+      console.error("[useChat] Failed to load conversation:", err);
     }
   }, []);
+
+  const createNewChat = useCallback(() => {
+    setActiveConversationId(null);
+    setMessages([]);
+    setCurrentPhase("EXPLORE");
+  }, []);
+
+  const sendMessage = useCallback(
+    async (text) => {
+      if (!text.trim()) return;
+
+      let convId = activeConversationId;
+      // Auto-create conversation if none active
+      if (!convId) {
+        try {
+          const data = await api.createConversation();
+          convId = data.conversation.id;
+          setActiveConversationId(convId);
+        } catch (err) {
+          console.error("Failed to auto-create conversation", err);
+          return;
+        }
+      }
+
+      // Optimistic UI
+      const userMsg = { role: "user", content: text, timestamp: new Date().toISOString() };
+      setMessages((prev) => [...prev, userMsg]);
+      setIsLoading(true);
+
+      try {
+        const data = await api.sendMessage(convId, text);
+
+        const botMsg = {
+          role: "bot",
+          content: data.botResponse,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, botMsg]);
+        setCurrentPhase(data.phase);
+
+        // Refresh conversation list to update titles/timestamps
+        loadConversations();
+      } catch (error) {
+        console.error("[useChat] Error:", error);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "bot",
+            content: "Maaf karna, server mein thoda masla aa gaya hai. Phir se koshish karoge?",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [activeConversationId, createNewChat, loadConversations]
+  );
+
+  const deleteConversation = useCallback(
+    async (id) => {
+      try {
+        await api.deleteConversation(id);
+        setConversations((prev) => prev.filter((c) => c.id !== id));
+        if (activeConversationId === id) {
+          setActiveConversationId(null);
+          setMessages([]);
+          setCurrentPhase("EXPLORE");
+        }
+      } catch (err) {
+        console.error("[useChat] Failed to delete:", err);
+      }
+    },
+    [activeConversationId]
+  );
+
+  const pinConversation = useCallback(async (id, isPinned) => {
+    try {
+      await api.updateConversation(id, { is_pinned: isPinned ? 1 : 0 });
+      loadConversations();
+    } catch (err) {
+      console.error("[useChat] Failed to pin:", err);
+    }
+  }, [loadConversations]);
 
   return {
+    conversations,
+    activeConversationId,
     messages,
     isLoading,
+    isLoadingConversations,
     currentPhase,
     sendMessage,
-    resetChat,
+    createNewChat,
+    selectConversation,
+    deleteConversation,
+    pinConversation,
+    loadConversations,
   };
 };
 
