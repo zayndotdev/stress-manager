@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useState } from "react";
 import { format, isToday, isYesterday } from "date-fns";
-import { Plus, MessageSquare, Trash2, Pin, X, Search, Wind, Smile, Settings, Menu } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Pin, X, Search, Wind, Smile, Settings, Menu, Sun, Moon } from "lucide-react";
 import gsap from "gsap";
 import BreathingWidget from "./BreathingWidget";
 import MoodTracker from "./MoodTracker";
 import SettingsPanel from "./SettingsPanel";
 import SearchPanel from "./SearchPanel";
+import { useTheme } from "@/context/ThemeContext";
 
 const Sidebar = ({
   conversations,
@@ -26,6 +27,7 @@ const Sidebar = ({
   const [showBreathing, setShowBreathing] = useState(false);
   const [showMood, setShowMood] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     if (ref.current && isOpen) {
@@ -211,6 +213,13 @@ const Sidebar = ({
         <div style={{ padding: "8px 12px", borderTop: isCollapsed ? "none" : "1px solid var(--border-default)", display: "flex", flexDirection: "column", gap: 2 }}>
           <SidebarAction className="anim-icon" icon={<Wind size={16} />} label="Breathing Exercise" onClick={() => setShowBreathing(true)} isCollapsed={isCollapsed} />
           <SidebarAction className="anim-icon" icon={<Smile size={16} />} label="Mood Check-in" onClick={() => setShowMood(true)} isCollapsed={isCollapsed} />
+          <SidebarAction 
+            className="anim-icon" 
+            icon={theme === "dark" ? <Sun size={16} /> : <Moon size={16} />} 
+            label={theme === "dark" ? "Light Mode" : "Dark Mode"} 
+            onClick={toggleTheme} 
+            isCollapsed={isCollapsed} 
+          />
           <SidebarAction className="anim-icon" icon={<Settings size={16} />} label="Settings" onClick={() => setShowSettings(true)} isCollapsed={isCollapsed} />
         </div>
       </aside>

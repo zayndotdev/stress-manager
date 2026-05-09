@@ -91,4 +91,21 @@ async function callMistralStream(fullPrompt) {
   return response.data;
 }
 
-module.exports = { callMistral, callMistralStream };
+async function transliterateText(urduText) {
+  const prompt = `You are a strict transliteration engine. Your ONLY job is to convert native Urdu (Arabic script) into conversational Roman Urdu (Latin script).
+Do not translate the meaning to English. Keep the exact Urdu words, just write them in Roman English alphabet.
+Do not add any greetings, explanations, or quotes. Output ONLY the transliterated text.
+
+Urdu: ${urduText}
+Roman Urdu:`;
+
+  // We can lower the temperature for more deterministic transliteration
+  const originalTemp = OLLAMA_OPTIONS.temperature;
+  OLLAMA_OPTIONS.temperature = 0.1;
+  const result = await callMistral(prompt);
+  OLLAMA_OPTIONS.temperature = originalTemp;
+  
+  return result.trim();
+}
+
+module.exports = { callMistral, callMistralStream, transliterateText };

@@ -95,4 +95,15 @@ export const api = {
     if (!res.ok) throw new Error("Failed to get mood history");
     return res.json();
   },
+
+  // Voice
+  async transliterate(text) {
+    const res = await fetch(`${API_BASE_URL}/api/voice/transliterate`, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error("Transliteration failed");
+    return res.json();
+  },
 };

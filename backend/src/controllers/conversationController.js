@@ -252,6 +252,24 @@ const resetLegacy = (req, res) => {
   res.json({ message: "Use POST /api/conversations to start a new chat", phase: "EXPLORE", questionCount: 0 });
 };
 
+// ──────────────────────────────────────────────────────────────
+// TRANSLITERATION
+// ──────────────────────────────────────────────────────────────
+const transliterate = async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ error: "No text provided" });
+    }
+    const romanUrdu = await llmCaller.transliterateText(text);
+    res.json({ transliterated: romanUrdu });
+  } catch (error) {
+    logger.error(`[ERROR] Transliteration failed: ${error.message}`);
+    // If it fails, fallback to the original text
+    res.json({ transliterated: req.body.text });
+  }
+};
+
 module.exports = {
   listConversations,
   createConversation,
@@ -263,4 +281,5 @@ module.exports = {
   recordMood,
   getMoodHistory,
   resetLegacy,
+  transliterate,
 };

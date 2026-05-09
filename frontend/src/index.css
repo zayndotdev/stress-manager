@@ -143,6 +143,22 @@ body {
   overflow: hidden;
 }
 
+/* ── Inputs & Placeholders ── */
+::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+::-webkit-input-placeholder {
+  color: var(--text-muted);
+}
+::-moz-placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+:-ms-input-placeholder {
+  color: var(--text-muted);
+}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

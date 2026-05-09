@@ -60,53 +60,7 @@ const ChatWindow = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative" }}>
-      {/* Header */}
-      {/* Theme Toggle Switch - Top Right Corner */}
-      <div
-        style={{
-          position: "absolute",
-          top: 24,
-          right: 24,
-          zIndex: 20,
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          padding: 4,
-          background: "var(--bg-glass)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid var(--bg-glass-border)",
-          borderRadius: 100,
-          boxShadow: "var(--shadow-sm)",
-        }}
-      >
-        <button
-          onClick={() => theme !== "light" && toggleTheme()}
-          title="Light Mode"
-          style={{
-            background: theme === "light" ? "var(--bg-elevated)" : "transparent",
-            border: "none",
-            color: theme === "light" ? "var(--text-primary)" : "var(--text-muted)",
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", borderRadius: 100, padding: "8px 12px"
-          }}
-        >
-          <Sun size={16} />
-        </button>
-        <button
-          onClick={() => theme !== "dark" && toggleTheme()}
-          title="Dark Mode"
-          style={{
-            background: theme === "dark" ? "var(--bg-elevated)" : "transparent",
-            border: "none",
-            color: theme === "dark" ? "var(--text-primary)" : "var(--text-muted)",
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", borderRadius: 100, padding: "8px 12px"
-          }}
-        >
-          <Moon size={16} />
-        </button>
-      </div>
+      {/* Header (Removed to prevent overlap) */}
 
       {/* 
         USER REQUEST: Commented out the floating pill, hamburger menu, and PhaseBadge (Explore tag).

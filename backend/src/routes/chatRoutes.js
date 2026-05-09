@@ -24,4 +24,7 @@ router.get("/mood/history", conv.getMoodHistory);
 router.post("/chat", legacyChat.chat);
 router.get("/reset", conv.resetLegacy);
 
+// ─── Voice ─────────────────────────────────────────────────
+router.post("/voice/transliterate", conv.transliterate);
+
 module.exports = router;
