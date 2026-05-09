@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import MessageBubble from "./MessageBubble";
 import InputBar from "./InputBar";
 import PhaseIndicator from "./PhaseIndicator";
+import DynamicLoader from "./DynamicLoader";
 import { useTheme } from "@/context/ThemeContext";
-import { Menu, ArrowDown, Sparkles, Sun, Moon } from "lucide-react";
+import { Menu, ArrowDown, Sparkles, Sun, Moon, Search } from "lucide-react";
 import gsap from "gsap";
 
 const QUICK_PROMPTS = [
@@ -20,6 +21,7 @@ const ChatWindow = ({
   currentPhase,
   onSendMessage,
   onToggleSidebar,
+  onOpenSearch,
   activeConversationId,
 }) => {
   const scrollRef = useRef(null);
@@ -59,76 +61,65 @@ const ChatWindow = ({
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative" }}>
       {/* Header */}
-      <header
+      {/* Theme Toggle Switch - Top Right Corner */}
+      <div
         style={{
+          position: "absolute",
+          top: 24,
+          right: 24,
+          zIndex: 20,
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          padding: "12px 16px",
-          borderBottom: "1px solid var(--border-default)",
-          background: "var(--bg-surface)",
-          zIndex: 10,
-          flexShrink: 0,
+          gap: 2,
+          padding: 4,
+          background: "var(--bg-glass)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          border: "1px solid var(--bg-glass-border)",
+          borderRadius: 100,
+          boxShadow: "var(--shadow-sm)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button
-            id="sidebar-toggle"
-            onClick={onToggleSidebar}
-            className="lg:hidden"
-            style={{
-              background: "none", border: "none", color: "var(--text-secondary)",
-              cursor: "pointer", padding: 6, borderRadius: 8, display: "flex",
-            }}
-          >
-            <Menu size={20} />
-          </button>
+        <button
+          onClick={() => theme !== "light" && toggleTheme()}
+          title="Light Mode"
+          style={{
+            background: theme === "light" ? "var(--bg-elevated)" : "transparent",
+            border: "none",
+            color: theme === "light" ? "var(--text-primary)" : "var(--text-muted)",
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", borderRadius: 100, padding: "8px 12px"
+          }}
+        >
+          <Sun size={16} />
+        </button>
+        <button
+          onClick={() => theme !== "dark" && toggleTheme()}
+          title="Dark Mode"
+          style={{
+            background: theme === "dark" ? "var(--bg-elevated)" : "transparent",
+            border: "none",
+            color: theme === "dark" ? "var(--text-primary)" : "var(--text-muted)",
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)", borderRadius: 100, padding: "8px 12px"
+          }}
+        >
+          <Moon size={16} />
+        </button>
+      </div>
 
-          <div
-            style={{
-              width: 40, height: 40, borderRadius: 12,
-              background: "linear-gradient(135deg, var(--bubble-user-from), var(--bubble-user-to))",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 2px 10px var(--primary-glow)",
-            }}
-          >
-            <span style={{ color: "white", fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 18 }}>
-              S
-            </span>
+      {/* 
+        USER REQUEST: Commented out the floating pill, hamburger menu, and PhaseBadge (Explore tag).
+        <button onClick={onToggleSidebar} className="lg:hidden"><Menu size={18} /></button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 24, height: 24, borderRadius: "50%", background: "linear-gradient(135deg, var(--primary), var(--secondary))", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ color: "white", fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 12 }}>S</span>
           </div>
-
-          <div>
-            <h1 style={{ margin: 0, fontSize: 16, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--text-primary)" }}>
-              Sakoon
-            </h1>
-            <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>
-              Stress support companion
-            </p>
-          </div>
+          <h1 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>Sakoon</h1>
         </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {/* Phase Badge */}
-          <PhaseBadge phase={currentPhase} />
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            title={theme === "dark" ? "Switch to light" : "Switch to dark"}
-            style={{
-              width: 36, height: 36, borderRadius: 10, border: "1px solid var(--border-default)",
-              background: "var(--bg-elevated)", color: "var(--text-secondary)",
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--border-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border-default)"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-          >
-            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-        </div>
-      </header>
-
-      <PhaseIndicator phase={currentPhase} />
+        <PhaseBadge phase={currentPhase} />
+        <button onClick={onOpenSearch}><Search size={16} /></button>
+      */}
 
       {/* Messages */}
       <div
@@ -222,22 +213,7 @@ const ChatWindow = ({
           ))
         )}
 
-        {isLoading && (
-          <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 12 }} className="animate-fade-in-up">
-            <div
-              style={{
-                padding: "14px 20px", borderRadius: "18px 18px 18px 4px",
-                background: "var(--bubble-bot-bg)", border: "1px solid var(--bubble-bot-border)",
-              }}
-            >
-              <div style={{ display: "flex", gap: 4 }}>
-                <span className="typing-dot" />
-                <span className="typing-dot" />
-                <span className="typing-dot" />
-              </div>
-            </div>
-          </div>
-        )}
+        {isLoading && <DynamicLoader />}
       </div>
 
       {/* Scroll to bottom */}

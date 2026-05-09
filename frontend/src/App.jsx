@@ -22,15 +22,13 @@ function AppContent() {
     pinConversation,
   } = useChat();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [splashDone, setSplashDone] = useState(() => {
-    // Only show splash once per session
-    return sessionStorage.getItem("sakoon_splash_done") === "true";
-  });
+  const [sidebarOpen, setSidebarOpen] = useState(false); // For mobile off-canvas
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // For desktop mini-sidebar
+  const [showSearch, setShowSearch] = useState(false);
+  const [splashDone, setSplashDone] = useState(false);
 
   const handleSplashComplete = useCallback(() => {
     setSplashDone(true);
-    sessionStorage.setItem("sakoon_splash_done", "true");
   }, []);
 
   const handleNewChat = async () => {
@@ -54,8 +52,19 @@ function AppContent() {
         <ParticleBackground phase={currentPhase} />
       </Suspense>
 
-      {/* Layout */}
-      <div style={{ position: "relative", zIndex: 5, display: "flex", width: "100%", height: "100%" }}>
+      {/* Floating Layout */}
+      <div 
+        style={{ 
+          position: "relative", 
+          zIndex: 5, 
+          display: "flex", 
+          width: "100%", 
+          height: "100%",
+          padding: "16px",
+          gap: "16px",
+          boxSizing: "border-box"
+        }}
+      >
         <Sidebar
           conversations={conversations}
           activeConversationId={activeConversationId}
@@ -64,16 +73,34 @@ function AppContent() {
           onDeleteConversation={deleteConversation}
           onPinConversation={pinConversation}
           isOpen={sidebarOpen}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           onClose={() => setSidebarOpen(false)}
           isLoading={isLoadingConversations}
+          showSearch={showSearch}
+          setShowSearch={setShowSearch}
         />
-        <main style={{ flex: 1, height: "100%", minWidth: 0 }}>
+        <main 
+          className="glass-panel"
+          style={{ 
+            flex: 1, 
+            height: "100%", 
+            minWidth: 0,
+            borderRadius: "24px",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: "var(--shadow-md)",
+            position: "relative"
+          }}
+        >
           <ChatWindow
             messages={messages}
             isLoading={isLoading}
             currentPhase={currentPhase}
             onSendMessage={sendMessage}
             onToggleSidebar={() => setSidebarOpen(true)}
+            onOpenSearch={() => setShowSearch(true)}
             activeConversationId={activeConversationId}
           />
         </main>

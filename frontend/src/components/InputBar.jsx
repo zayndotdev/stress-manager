@@ -28,12 +28,28 @@ const InputBar = ({ onSend, disabled }) => {
   return (
     <div
       style={{
-        padding: "12px 16px",
-        borderTop: "1px solid var(--border-default)",
-        background: "var(--bg-surface)",
+        padding: "16px",
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 20,
+        background: "linear-gradient(to top, var(--bg-surface) 60%, transparent)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 800, margin: "0 auto" }}>
+      <div 
+        className="glass-panel"
+        style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          gap: 10, 
+          maxWidth: 800, 
+          margin: "0 auto",
+          padding: "8px",
+          borderRadius: 100,
+          boxShadow: "var(--shadow-lg)",
+        }}
+      >
         <input
           id="message-input"
           type="text"
@@ -45,24 +61,15 @@ const InputBar = ({ onSend, disabled }) => {
           autoComplete="off"
           style={{
             flex: 1,
-            padding: "12px 16px",
-            borderRadius: 14,
-            border: "1px solid var(--border-default)",
-            background: "var(--bg-input)",
+            padding: "14px 20px",
+            borderRadius: 100,
+            border: "none",
+            background: "transparent",
             color: "var(--text-primary)",
-            fontSize: 14,
+            fontSize: 15,
             fontFamily: "var(--font-sans)",
             outline: "none",
-            transition: "all 0.2s ease",
             opacity: disabled ? 0.5 : 1,
-          }}
-          onFocus={(e) => {
-            e.target.style.borderColor = "var(--border-focus)";
-            e.target.style.boxShadow = "0 0 0 3px var(--primary-light)";
-          }}
-          onBlur={(e) => {
-            e.target.style.borderColor = "var(--border-default)";
-            e.target.style.boxShadow = "none";
           }}
         />
         <button
@@ -72,9 +79,9 @@ const InputBar = ({ onSend, disabled }) => {
           disabled={!active}
           aria-label="Send message"
           style={{
-            width: 46,
-            height: 46,
-            borderRadius: 14,
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
             border: "none",
             display: "flex",
             alignItems: "center",
@@ -83,14 +90,20 @@ const InputBar = ({ onSend, disabled }) => {
             transition: "all 0.2s ease",
             ...(active
               ? {
-                  background: "linear-gradient(135deg, var(--bubble-user-from), var(--bubble-user-to))",
+                  background: "var(--primary)",
                   color: "#FFFFFF",
-                  boxShadow: "0 2px 12px var(--primary-glow)",
+                  boxShadow: "0 4px 12px var(--primary-glow)",
                 }
               : {
                   background: "var(--bg-elevated)",
                   color: "var(--text-muted)",
                 }),
+          }}
+          onMouseEnter={(e) => {
+            if (active) e.currentTarget.style.transform = "scale(1.05)";
+          }}
+          onMouseLeave={(e) => {
+            if (active) e.currentTarget.style.transform = "scale(1)";
           }}
         >
           <Send size={18} />

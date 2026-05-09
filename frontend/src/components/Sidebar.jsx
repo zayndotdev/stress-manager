@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { format, isToday, isYesterday } from "date-fns";
-import { Plus, MessageSquare, Trash2, Pin, X, Search, Wind, Smile, Settings } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Pin, X, Search, Wind, Smile, Settings, Menu } from "lucide-react";
 import gsap from "gsap";
 import BreathingWidget from "./BreathingWidget";
 import MoodTracker from "./MoodTracker";
@@ -15,20 +15,33 @@ const Sidebar = ({
   onDeleteConversation,
   onPinConversation,
   isOpen,
+  isCollapsed,
+  onToggleCollapse,
   onClose,
   isLoading,
+  showSearch,
+  setShowSearch,
 }) => {
   const ref = useRef(null);
   const [showBreathing, setShowBreathing] = useState(false);
   const [showMood, setShowMood] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     if (ref.current && isOpen) {
       gsap.fromTo(ref.current, { x: -300 }, { x: 0, duration: 0.35, ease: "power3.out" });
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isCollapsed && ref.current) {
+      gsap.fromTo(
+        ref.current.querySelectorAll('.anim-icon'),
+        { y: 15, opacity: 0, scale: 0.8 },
+        { y: 0, opacity: 1, scale: 1, duration: 0.4, stagger: 0.05, ease: "back.out(1.5)" }
+      );
+    }
+  }, [isCollapsed]);
 
   const grouped = groupByDate(conversations);
 
@@ -68,31 +81,34 @@ const Sidebar = ({
 
       <aside
         ref={ref}
+        className={`glass-panel fixed lg:relative ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
         style={{
-          width: 280,
+          width: isCollapsed ? 80 : 280,
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          background: "var(--bg-surface)",
-          borderRight: "1px solid var(--border-default)",
+          borderRadius: "24px",
+          boxShadow: "var(--shadow-md)",
           zIndex: 50,
-          transition: "transform 0.3s ease",
+          transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease",
+          overflow: "hidden",
         }}
-        className={`fixed lg:relative ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0`}
       >
         {/* Header */}
-        <div style={{ padding: "16px 14px", borderBottom: "1px solid var(--border-default)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <span
-              className="gradient-text-brand"
-              style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800 }}
-            >
-              Sakoon
-            </span>
+        <div style={{ padding: "16px 14px", borderBottom: isCollapsed ? "none" : "1px solid var(--border-default)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: isCollapsed ? "center" : "space-between", marginBottom: 14 }}>
+            {!isCollapsed && (
+              <span
+                className="gradient-text-brand"
+                style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800 }}
+              >
+                Sakoon
+              </span>
+            )}
             <div style={{ display: "flex", gap: 8 }}>
               <button
-                onClick={() => setShowSearch(true)}
-                title="Search (Cmd+K)"
+                onClick={onToggleCollapse}
+                title="Toggle Sidebar"
                 style={{
                   background: "var(--bg-elevated)", border: "1px solid var(--border-default)", color: "var(--text-muted)", cursor: "pointer",
                   padding: 6, borderRadius: 8, transition: "all 0.2s"
@@ -100,45 +116,48 @@ const Sidebar = ({
                 onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "var(--border-focus)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "var(--border-default)"; }}
               >
-                <Search size={16} />
+                <Menu size={16} />
               </button>
-              <button
-                onClick={onClose}
-                className="lg:hidden"
-                style={{
-                  background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer",
-                  padding: 6, borderRadius: 8,
-                }}
-              >
-                <X size={18} />
-              </button>
+              {!isCollapsed && (
+                <button
+                  onClick={onClose}
+                  className="lg:hidden"
+                  style={{
+                    background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer",
+                    padding: 6, borderRadius: 8,
+                  }}
+                >
+                  <X size={18} />
+                </button>
+              )}
             </div>
           </div>
           <button
             id="new-chat-button"
             onClick={onNewChat}
-            className="btn-primary"
+            className="btn-primary anim-icon"
             style={{
               width: "100%",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               gap: 8,
-              padding: "10px 0",
+              padding: isCollapsed ? "12px 0" : "10px 0",
               borderRadius: 12,
               fontSize: 13,
               fontWeight: 600,
               fontFamily: "var(--font-sans)",
               cursor: "pointer",
             }}
+            title={isCollapsed ? "New Chat" : ""}
           >
-            <Plus size={16} />
-            New Chat
+            <Plus size={isCollapsed ? 20 : 16} />
+            {!isCollapsed && "New Chat"}
           </button>
         </div>
 
         {/* List */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "6px 8px" }}>
+        <div className="sidebar-list-container" style={{ flex: 1, overflowY: "auto", padding: "6px 8px" }}>
           {isLoading ? (
             <div style={{ padding: 8, display: "flex", flexDirection: "column", gap: 6 }}>
               {[1, 2, 3].map((i) => (
@@ -146,32 +165,37 @@ const Sidebar = ({
               ))}
             </div>
           ) : conversations.length === 0 ? (
-            <div
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center",
-                justifyContent: "center", height: 160, textAlign: "center", padding: 16,
-              }}
-            >
-              <MessageSquare size={28} style={{ color: "var(--text-muted)", marginBottom: 10 }} />
-              <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
-                Naya chat shuru karein
-              </p>
-            </div>
+            isCollapsed ? null : (
+              <div
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center",
+                  justifyContent: "center", height: 160, textAlign: "center", padding: 16,
+                }}
+              >
+                <MessageSquare size={28} style={{ color: "var(--text-muted)", marginBottom: 10 }} />
+                <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
+                  Naya chat shuru karein
+                </p>
+              </div>
+            )
           ) : (
             Object.entries(grouped).map(([label, convos]) => (
-              <div key={label} style={{ marginBottom: 4 }}>
-                <p
-                  style={{
-                    fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em",
-                    color: "var(--text-muted)", padding: "8px 10px 4px", margin: 0, fontWeight: 600,
-                  }}
-                >
-                  {label}
-                </p>
+              <div key={label} style={{ marginBottom: 8 }}>
+                {!isCollapsed && (
+                  <p
+                    style={{
+                      fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em",
+                      color: "var(--text-muted)", padding: "8px 10px 4px", margin: 0, fontWeight: 600,
+                    }}
+                  >
+                    {label}
+                  </p>
+                )}
                 {convos.map((conv) => (
                   <ConvItem
                     key={conv.id}
                     conv={conv}
+                    isCollapsed={isCollapsed}
                     isActive={conv.id === activeConversationId}
                     onSelect={() => onSelectConversation(conv.id)}
                     onDelete={() => onDeleteConversation(conv.id)}
@@ -184,10 +208,10 @@ const Sidebar = ({
         </div>
 
         {/* Tools/Actions */}
-        <div style={{ padding: "8px 12px", borderTop: "1px solid var(--border-default)", display: "flex", flexDirection: "column", gap: 2 }}>
-          <SidebarAction icon={<Wind size={16} />} label="Breathing Exercise" onClick={() => setShowBreathing(true)} />
-          <SidebarAction icon={<Smile size={16} />} label="Mood Check-in" onClick={() => setShowMood(true)} />
-          <SidebarAction icon={<Settings size={16} />} label="Settings" onClick={() => setShowSettings(true)} />
+        <div style={{ padding: "8px 12px", borderTop: isCollapsed ? "none" : "1px solid var(--border-default)", display: "flex", flexDirection: "column", gap: 2 }}>
+          <SidebarAction className="anim-icon" icon={<Wind size={16} />} label="Breathing Exercise" onClick={() => setShowBreathing(true)} isCollapsed={isCollapsed} />
+          <SidebarAction className="anim-icon" icon={<Smile size={16} />} label="Mood Check-in" onClick={() => setShowMood(true)} isCollapsed={isCollapsed} />
+          <SidebarAction className="anim-icon" icon={<Settings size={16} />} label="Settings" onClick={() => setShowSettings(true)} isCollapsed={isCollapsed} />
         </div>
       </aside>
 
@@ -200,49 +224,70 @@ const Sidebar = ({
   );
 };
 
-const ConvItem = ({ conv, isActive, onSelect, onDelete, onPin }) => {
+const ConvItem = ({ conv, isCollapsed, isActive, onSelect, onDelete, onPin }) => {
   const [hovered, setHovered] = React.useState(false);
+  const itemRef = useRef(null);
+
+  useEffect(() => {
+    // Entrance animation
+    gsap.fromTo(
+      itemRef.current,
+      { opacity: 0, x: -10 },
+      { opacity: 1, x: 0, duration: 0.3, ease: "power2.out" }
+    );
+  }, []);
 
   return (
     <div
+      ref={itemRef}
       onClick={onSelect}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      title={isCollapsed ? (conv.title || "New Chat") : undefined}
       style={{
         display: "flex",
         alignItems: "center",
+        justifyContent: isCollapsed ? "center" : "flex-start",
         gap: 8,
-        padding: "10px 12px",
-        borderRadius: 10,
+        padding: isCollapsed ? "12px 0" : "10px 12px",
+        borderRadius: 12,
         cursor: "pointer",
-        transition: "all 0.15s ease",
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         position: "relative",
         background: isActive ? "var(--primary-light)" : hovered ? "var(--bg-hover)" : "transparent",
+        transform: hovered && !isActive ? "scale(1.02)" : "scale(1)",
         border: isActive ? "1px solid var(--border-focus)" : "1px solid transparent",
+        marginBottom: 4
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {conv.is_pinned ? <Pin size={10} style={{ color: "var(--primary)" }} /> : null}
-          <p
-            style={{
-              fontSize: 13, fontWeight: isActive ? 600 : 500, margin: 0,
-              color: isActive ? "var(--primary)" : "var(--text-primary)",
-              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-            }}
-          >
-            {conv.title || "New Chat"}
-          </p>
-        </div>
-        <p style={{ fontSize: 10, color: "var(--text-muted)", margin: "2px 0 0" }}>
-          {fmtDate(conv.updated_at || conv.created_at)}
-        </p>
-      </div>
-      {hovered && (
-        <div style={{ display: "flex", gap: 2 }}>
-          <ActionBtn icon={<Pin size={11} />} onClick={onPin} title="Pin" />
-          <ActionBtn icon={<Trash2 size={11} />} onClick={onDelete} title="Delete" danger />
-        </div>
+      {isCollapsed ? (
+        <MessageSquare size={16} style={{ color: isActive ? "var(--primary)" : "var(--text-muted)" }} />
+      ) : (
+        <>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              {conv.is_pinned ? <Pin size={10} style={{ color: "var(--primary)" }} /> : null}
+              <p
+                style={{
+                  fontSize: 13, fontWeight: isActive ? 600 : 500, margin: 0,
+                  color: isActive ? "var(--primary)" : "var(--text-primary)",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                }}
+              >
+                {conv.title || "New Chat"}
+              </p>
+            </div>
+            <p style={{ fontSize: 10, color: "var(--text-muted)", margin: "2px 0 0" }}>
+              {fmtDate(conv.updated_at || conv.created_at)}
+            </p>
+          </div>
+          {hovered && (
+            <div style={{ display: "flex", gap: 2 }}>
+              <ActionBtn icon={<Pin size={11} />} onClick={(e) => { e.stopPropagation(); onPin(); }} title="Pin" />
+              <ActionBtn icon={<Trash2 size={11} />} onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete" danger />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -266,11 +311,14 @@ const ActionBtn = ({ icon, onClick, title, danger }) => (
   </button>
 );
 
-const SidebarAction = ({ icon, label, onClick }) => (
+const SidebarAction = ({ icon, label, onClick, isCollapsed, className }) => (
   <button
     onClick={onClick}
+    title={isCollapsed ? label : undefined}
+    className={className}
     style={{
-      display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", width: "100%",
+      display: "flex", alignItems: "center", gap: 10, padding: isCollapsed ? "10px 0" : "10px 12px", width: "100%",
+      justifyContent: isCollapsed ? "center" : "flex-start",
       border: "none", background: "transparent", cursor: "pointer", borderRadius: 10,
       color: "var(--text-secondary)", fontSize: 13, fontWeight: 500, transition: "all 0.2s"
     }}
@@ -278,7 +326,7 @@ const SidebarAction = ({ icon, label, onClick }) => (
     onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
   >
     {icon}
-    {label}
+    {!isCollapsed && label}
   </button>
 );
 

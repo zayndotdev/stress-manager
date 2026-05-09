@@ -68,4 +68,27 @@ async function callMistral(fullPrompt) {
   }
 }
 
-module.exports = { callMistral };
+async function callMistralStream(fullPrompt) {
+  if (!fullPrompt || typeof fullPrompt !== "string") {
+    throw new Error("Empty prompt received.");
+  }
+
+  logger.info(`[OLLAMA] Sending streaming request to ${OLLAMA_MODEL}...`);
+  const response = await axios.post(
+    OLLAMA_URL,
+    {
+      model: OLLAMA_MODEL,
+      prompt: fullPrompt,
+      stream: true,
+      options: OLLAMA_OPTIONS,
+    },
+    {
+      responseType: 'stream',
+      timeout: OLLAMA_TIMEOUT_MS,
+    }
+  );
+
+  return response.data;
+}
+
+module.exports = { callMistral, callMistralStream };
