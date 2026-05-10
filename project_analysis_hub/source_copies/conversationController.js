@@ -155,7 +155,6 @@ const chat = async (req, res) => {
     // 5. Call LLM
     logger.info("[LLM] Calling Ollama chat API...");
     let rawBotResponse = await callChat(chatMessages);
-    logger.llm(chatMessages, rawBotResponse);
     let cleanedResponse = cleanResponse(rawBotResponse);
 
     // 6. English check — log only (NO RETRY, NO FALLBACK OVERWRITE)
@@ -257,8 +256,6 @@ const chatStream = async (req, res) => {
 
     // 6. Stream from Ollama
     const stream = await callChatStream(chatMessages);
-    console.log(`[STREAM-START] Conversation: ${id} | Phase: ${currentPhase} | Q#: ${qCount}`);
-    console.log(`[STREAM-START] Distress: ${distressDetected} | History messages sent to LLM: ${chatMessages.length}`);
     let fullResponse = "";
 
     let stopStream = false;
@@ -272,32 +269,17 @@ const chatStream = async (req, res) => {
           if (parsed.message && parsed.message.content) {
             const token = parsed.message.content;
             
-            // EMERGENCY STOP: If model starts explaining itself in English
-            const ENGLISH_STOP_PHRASES = [
-                "let me know if", "please note that", "please remember",
-                "i am here to", "**explanation", "**note", "(translation:",
-                "as an ai", "it is important to seek",
-                "i understand", "it sounds like", "i'm sorry to hear",
-                "tell me more about", "it's understandable why"
-            ];
+            // EMERGENCY STOP: If model starts explaining itself
             const lookahead = (fullResponse + token).toLowerCase();
-            if (ENGLISH_STOP_PHRASES.some(phrase => lookahead.includes(phrase))) {
-                logger.warn(`[STREAM] Detected commentary in lookahead. Stopping stream early.`);
+            if (lookahead.includes("explanation") || lookahead.includes("note:") || lookahead.includes("**explanation")) {
+                logger.warn(`[STREAM] Detected commentary token "${token}". Stopping stream early.`);
                 stopStream = true;
-                console.log(`\n[STREAM-END] Raw length: ${fullResponse.length}`);
-        const finalCleaned = cleanResponse(fullResponse);
-        console.log(`[STREAM-CLEANED] "${finalCleaned}"`);
-        
-        res.write(`data: ${JSON.stringify({ done: true, fullResponse: finalCleaned, phase: currentPhase, questionCount: qCount })}\n\n`);
+                res.write(`data: ${JSON.stringify({ done: true, fullResponse: cleanResponse(fullResponse), phase: currentPhase, questionCount: qCount })}\n\n`);
                 res.end();
                 return;
             }
 
-            process.stdout.write(token); // Log token in real-time
             fullResponse += token;
-            if (fullResponse.length <= 50) {
-                console.log(`[STREAM-TOKENS] First tokens: "${fullResponse}"`);
-            }
             if (fullResponse.length === token.length) {
                 logger.info("[STREAM] First token received.");
             }
@@ -310,11 +292,8 @@ const chatStream = async (req, res) => {
     });
 
     stream.on("end", () => {
-      if (stopStream) return;
-
-      console.log(`\n[STREAM-END] Full raw length: ${fullResponse.length}`);
+      // Clean the full response
       let cleanedResponse = cleanResponse(fullResponse);
-      console.log(`[STREAM-CLEANED] "${cleanedResponse}"`);
 
       // English check — log only
       const analysis = analyzeResponse(cleanedResponse);
@@ -337,12 +316,6 @@ const chatStream = async (req, res) => {
         const title = generateTitle([...allMessages, { role: "user", content: userMessage }]);
         stmts.updateConversation.run(title, null, null, null, null, null, id);
       }
-
-      console.log(`[STREAM-END] Full raw response: "${fullResponse}"`);
-      console.log(`[STREAM-END] Cleaned response: "${cleanedResponse}"`);
-      console.log(`[STREAM-END] Arabic present: ${/[\u0600-\u06FF]/.test(cleanedResponse)}`);
-      console.log(`[STREAM-END] Response length: ${cleanedResponse.length} chars`);
-      logger.llm(chatMessages, fullResponse);
 
       // Send final event with metadata
       res.write(`data: ${JSON.stringify({

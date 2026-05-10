@@ -15,6 +15,7 @@ function AppContent() {
     isLoading,
     isLoadingConversations,
     currentPhase,
+    streamingContent,
     sendMessage,
     createNewChat,
     selectConversation,
@@ -97,6 +98,7 @@ function AppContent() {
           <ChatWindow
             messages={messages}
             isLoading={isLoading}
+            streamingContent={streamingContent}
             currentPhase={currentPhase}
             onSendMessage={sendMessage}
             onToggleSidebar={() => setSidebarOpen(true)}

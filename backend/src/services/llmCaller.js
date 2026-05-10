@@ -6,106 +6,50 @@ function readNumberEnv(key, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-const OLLAMA_URL =
-  process.env.OLLAMA_URL || "http://127.0.0.1:11434/api/generate";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "mistral";
-const OLLAMA_TIMEOUT_MS = readNumberEnv("OLLAMA_TIMEOUT_MS", 180000);
+const OLLAMA_BASE = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.1:latest";
+const OLLAMA_TIMEOUT_MS = readNumberEnv("OLLAMA_TIMEOUT_MS", 180000); 
+
 const OLLAMA_OPTIONS = {
-  temperature: readNumberEnv("OLLAMA_TEMPERATURE", 0.4),
-  top_p: readNumberEnv("OLLAMA_TOP_P", 0.8),
-  repeat_penalty: readNumberEnv("OLLAMA_REPEAT_PENALTY", 1.18),
-  num_predict: Math.round(readNumberEnv("OLLAMA_NUM_PREDICT", 120)),
+  temperature: 0.7,  // Natural flow
+  top_p: 0.9,        // High quality
+  top_k: 40,         // Broad vocabulary
+  repeat_penalty: 1.1,
+  num_predict: 60,   // Fast and concise
+  num_ctx: 1024,     // Reduced memory usage for speed
 };
 
-async function callMistral(fullPrompt) {
-  const startTime = Date.now();
-
-  if (!fullPrompt || typeof fullPrompt !== "string") {
-    logger.warn(
-      "[OLLAMA] Empty prompt received. Returning safe fallback response.",
-    );
-    return "Kya tum mujhe thoda aur context de sakte ho?";
-  }
-
+async function callChat(messages) {
   try {
-    logger.info(`[OLLAMA] Sending request to ${OLLAMA_MODEL}...`);
     const response = await axios.post(
-      OLLAMA_URL,
-      {
-        model: OLLAMA_MODEL,
-        prompt: fullPrompt,
-        stream: false,
-        options: OLLAMA_OPTIONS,
-      },
-      {
-        timeout: OLLAMA_TIMEOUT_MS,
-      },
+      `${OLLAMA_BASE}/api/chat`,
+      { model: OLLAMA_MODEL, messages, stream: false, options: OLLAMA_OPTIONS },
+      { timeout: OLLAMA_TIMEOUT_MS }
     );
-
-    const duration = Date.now() - startTime;
-    logger.info(`[OLLAMA] Response received in ${duration}ms`);
-    return response.data.response ? response.data.response.trim() : "";
+    return response.data?.message?.content?.trim() || "";
   } catch (error) {
-    logger.error(`[OLLAMA] ERROR: ${error.message}`);
-
-    if (error.code === "ECONNABORTED") {
-      logger.error(`[OLLAMA] Request timed out after ${OLLAMA_TIMEOUT_MS}ms.`);
-    }
-
-    if (error.code === "ECONNREFUSED") {
-      logger.error(
-        "[OLLAMA] Is Ollama running? Could not connect to port 11434.",
-      );
-    }
-
-    if (error.response) {
-      logger.error(
-        `[OLLAMA] HTTP ${error.response.status}: ${JSON.stringify(error.response.data)}`,
-      );
-    }
-
-    return "Maaf kijiye ga, abhi system mein kuch takniki masail hain. Kya aap apni baat dobara bata sakte hain?";
+    return "Maaf kijiye, system mein masla hai.";
   }
 }
 
-async function callMistralStream(fullPrompt) {
-  if (!fullPrompt || typeof fullPrompt !== "string") {
-    throw new Error("Empty prompt received.");
-  }
-
-  logger.info(`[OLLAMA] Sending streaming request to ${OLLAMA_MODEL}...`);
+async function callChatStream(messages) {
   const response = await axios.post(
-    OLLAMA_URL,
-    {
-      model: OLLAMA_MODEL,
-      prompt: fullPrompt,
-      stream: true,
-      options: OLLAMA_OPTIONS,
-    },
-    {
-      responseType: 'stream',
-      timeout: OLLAMA_TIMEOUT_MS,
-    }
+    `${OLLAMA_BASE}/api/chat`,
+    { model: OLLAMA_MODEL, messages, stream: true, options: OLLAMA_OPTIONS },
+    { responseType: "stream", timeout: OLLAMA_TIMEOUT_MS }
   );
-
   return response.data;
 }
 
-async function transliterateText(urduText) {
-  const prompt = `You are a strict transliteration engine. Your ONLY job is to convert native Urdu (Arabic script) into conversational Roman Urdu (Latin script).
-Do not translate the meaning to English. Keep the exact Urdu words, just write them in Roman English alphabet.
-Do not add any greetings, explanations, or quotes. Output ONLY the transliterated text.
-
-Urdu: ${urduText}
-Roman Urdu:`;
-
-  // We can lower the temperature for more deterministic transliteration
-  const originalTemp = OLLAMA_OPTIONS.temperature;
-  OLLAMA_OPTIONS.temperature = 0.1;
-  const result = await callMistral(prompt);
-  OLLAMA_OPTIONS.temperature = originalTemp;
-  
-  return result.trim();
+async function warmUpModel() {
+  try {
+    await axios.post(`${OLLAMA_BASE}/api/chat`, {
+        model: OLLAMA_MODEL,
+        messages: [{ role: "user", content: "hi" }],
+        stream: false,
+        options: { num_predict: 5 },
+      }, { timeout: 60000 });
+  } catch (e) {}
 }
 
-module.exports = { callMistral, callMistralStream, transliterateText };
+module.exports = { callChat, callChatStream, warmUpModel, OLLAMA_MODEL };

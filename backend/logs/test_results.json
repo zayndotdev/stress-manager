@@ -1,0 +1,146 @@
+{
+  "timestamp": "2026-05-10T18:04:17.908Z",
+  "sessionId": "test-session-b56b4786-53bc-4e75-bde9-2dba3138e6b0",
+  "passCount": 8,
+  "failCount": 0,
+  "passRate": 100,
+  "results": [
+    {
+      "testId": "TC-01",
+      "description": "Basic greeting — should respond in Roman Urdu",
+      "input": "Assalam o Alaikum",
+      "passed": [
+        "PASS: No Arabic script",
+        "PASS: Roman Urdu markers found: [hai, kya, aap, baat]",
+        "PASS: Length OK (108 chars)",
+        "PASS: Expected keywords found: [aap, baat]"
+      ],
+      "issues": [],
+      "overallPass": true,
+      "response": "Aap ne aise hi baat kiya hai!   Kisi bhi koshish se mujhse bharosa rakhna, kya main apki help kar sakta hun?",
+      "phase": "EXPLORE",
+      "elapsed": 37606,
+      "attempt": 1
+    },
+    {
+      "testId": "TC-02",
+      "description": "Stress trigger — should detect distress, stay empathetic",
+      "input": "bohat tension ho rahi hai yaar",
+      "passed": [
+        "PASS: No Arabic script",
+        "PASS: Roman Urdu markers found: [hai, kya, aap, mujhe]",
+        "PASS: Length OK (77 chars)",
+        "PASS: Expected keywords found: [aap, kya, bata]"
+      ],
+      "issues": [],
+      "overallPass": true,
+      "response": "Yeh sun ke afsos hua  — kya aap mujhe thoda aur bata sakte hain kya haal hai?",
+      "phase": "EXPLORE",
+      "elapsed": 28495,
+      "attempt": 1
+    },
+    {
+      "testId": "TC-03",
+      "description": "Sleep problem — medical-adjacent, must stay Roman Urdu",
+      "input": "raat ko neend nahi aati bilkul",
+      "passed": [
+        "PASS: No Arabic script",
+        "PASS: Roman Urdu markers found: [hai, rahi, se, ka]",
+        "PASS: Length OK (53 chars)",
+        "PASS: Expected keywords found: [kab, hai]"
+      ],
+      "issues": [],
+      "overallPass": true,
+      "response": "Ye sun ke afsos hua - kab se yeh problem ho rahi hai?",
+      "phase": "EXPLORE",
+      "elapsed": 4368,
+      "attempt": 1
+    },
+    {
+      "testId": "TC-04",
+      "description": "Confusion — should stay in EXPLORE phase",
+      "input": "pata nahi yaar kuch samajh nahi aa raha",
+      "passed": [
+        "PASS: No Arabic script",
+        "PASS: Roman Urdu markers found: [hai, kya, aap, mujhe]",
+        "PASS: Length OK (112 chars)",
+        "PASS: Expected keywords found: [aap, kya, baat, thoda]"
+      ],
+      "issues": [],
+      "overallPass": true,
+      "response": "Kya aap mujhe thoda samjahen kya yeh problem ki baat hai?  \n\n\nLet me know if you'd like to explore this further!",
+      "phase": "EXPLORE",
+      "elapsed": 24631,
+      "attempt": 1
+    },
+    {
+      "testId": "TC-05",
+      "description": "Office stress — should empathize",
+      "input": "boss ne aaj bohat daanta",
+      "passed": [
+        "PASS: No Arabic script",
+        "PASS: Roman Urdu markers found: [hai, bohat, ki]",
+        "PASS: Length OK (84 chars)"
+      ],
+      "issues": [
+        "WARN: None of expected keywords found: [aap, kya, hua, boss, bura, bata]"
+      ],
+      "overallPass": true,
+      "response": "Ye waaqai mushkil situation hai - workplace mein aisa hona bohat stressful hota hai?",
+      "phase": "EXPLORE",
+      "elapsed": 20748,
+      "attempt": 1
+    },
+    {
+      "testId": "TC-06",
+      "description": "Loneliness — must NOT use Hindi words",
+      "input": "akela feel ho raha hoon",
+      "passed": [
+        "PASS: No Arabic script",
+        "PASS: Roman Urdu markers found: [hai, kya, aap]",
+        "PASS: Expected keywords found: [aap]",
+        "PASS: No Hindi words"
+      ],
+      "issues": [],
+      "overallPass": true,
+      "response": "Yeh sun ke khushi hui; kya aapke liye ek special reason hai?",
+      "phase": "EXPLORE",
+      "elapsed": 19769,
+      "attempt": 1
+    },
+    {
+      "testId": "TC-07",
+      "description": "Positive mood — should celebrate with the user",
+      "input": "aaj bohat acha din tha yaar",
+      "passed": [
+        "PASS: No Arabic script",
+        "PASS: Roman Urdu markers found: [hai, kya, raha, ki]",
+        "PASS: Length OK (84 chars)",
+        "PASS: Expected keywords found: [kya, khush]"
+      ],
+      "issues": [],
+      "overallPass": true,
+      "response": "Ye sun ke khushi hui!   Kya aisa lag raha hai ki kya har ek badal pe sawaab ho gaya?",
+      "phase": "EXPLORE",
+      "elapsed": 20214,
+      "attempt": 1
+    },
+    {
+      "testId": "TC-08",
+      "description": "Second message in same convo — should maintain context",
+      "input": "haan aur exam bhi kal hai",
+      "passed": [
+        "PASS: No Arabic script",
+        "PASS: Roman Urdu markers found: [hai, kya, aap, rahi]",
+        "PASS: Length OK (90 chars)",
+        "PASS: Expected keywords found: [aap, kya]"
+      ],
+      "issues": [],
+      "overallPass": true,
+      "response": "Ye to bahut takleef kar rahi hain!   Aap kya hisse ke liye aise tension se samjh sakte ho?",
+      "phase": "EXPLORE",
+      "elapsed": 16381,
+      "attempt": 1
+    }
+  ]
+}

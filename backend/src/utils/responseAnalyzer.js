@@ -1,57 +1,35 @@
 const logger = require("./logger");
 
-/**
- * Common English stopwords and connectors that signify an English response.
- */
-const ENGLISH_STOPWORDS = new Set([
-  "the", "is", "are", "you", "your", "should", "will", "would", "could",
-  "that", "this", "these", "those", "have", "has", "had", "been", "being",
-  "with", "from", "about", "above", "below", "into", "onto", "under",
-  "some", "any", "all", "each", "every", "both", "either", "neither",
-  "great", "hear", "well", "far", "been", "day", "night", "feel", "feeling",
-  "good", "better", "best", "very", "much", "many", "more", "most",
-  "help", "helpful", "talk", "tell", "say", "said", "thought", "think"
-]);
+const ARABIC_REGEX = /[\u0600-\u06FF]/;
+const ENGLISH_WORDS = ["i am", "i'm", "you are", "you're", "hello", "hi there", "sure", "okay", "yes", "no problem", "of course", "thank you", "please", "understand", "feeling", "sorry to hear", "sounds like", "it seems"];
+const ROMAN_URDU_MARKERS = ["hai", "hoon", "kya", "aap", "yaar", "mujhe", "tumhe", "baat", "karo", "raha", "rahi", "nahi", "bohat", "acha", "theek"];
 
-/**
- * Essential Roman Urdu anchors that verify it's Urdu. 
- * Even if it's "broken", it should have these tokens.
- */
-const URDU_ANCHORS = new Set([
-  "hai", "hain", "h", "hn", "mein", "me", "ka", "ki", "ko", "se", "aur",
-  "aj", "abhi", "kya", "kia", "kyun", "q", "lekin", "magar", "bilkul", 
-  "preshan", "masla", "baat", "karo", "ji", "hun", "ho", "hoon"
-]);
-
-/**
- * Analyzes a response to determine its primary language.
- * Returns { isEnglish, isUrdu, confidence }
- */
 function analyzeResponse(text) {
-  if (!text) return { isEnglish: false, isUrdu: false, score: 0 };
+  if (!text) return { isEnglish: false, hasArabic: false, hasRomanUrdu: false, score: 0, issues: [] };
 
-  const words = text.toLowerCase().split(/\s+/).map(w => w.replace(/[^a-z]/g, ""));
-  
-  let engCount = 0;
-  let urduCount = 0;
+  const lower = text.toLowerCase();
+  const issues = [];
 
-  words.forEach(word => {
-    if (ENGLISH_STOPWORDS.has(word)) engCount++;
-    if (URDU_ANCHORS.has(word)) urduCount++;
-  });
+  const hasArabic = ARABIC_REGEX.test(text);
+  if (hasArabic) issues.push("ARABIC_SCRIPT_DETECTED");
 
-  const engScore = engCount / words.length;
-  const urduScore = urduCount / words.length;
+  const englishWordCount = ENGLISH_WORDS.filter(w => lower.includes(w)).length;
+  const isEnglish = englishWordCount >= 2;
+  if (isEnglish) issues.push(`ENGLISH_WORDS_DETECTED: ${englishWordCount}`);
 
-  // VERDICT LOGIC:
-  // 1. If English density > 30%, it's likely a English clinical hallucination.
-  // 2. If Urdu anchors are 0, it's definitely NOT Urdu.
-  const isEnglish = engScore > 0.3 || (engScore > 0.1 && urduScore === 0);
-  const isUrdu = urduScore > 0;
+  const romanUrduCount = ROMAN_URDU_MARKERS.filter(w => lower.includes(w)).length;
+  const hasRomanUrdu = romanUrduCount >= 1;
+  if (!hasRomanUrdu) issues.push("NO_ROMAN_URDU_MARKERS");
 
-  logger.info(`[ANALYZER] Scores - Eng: ${engScore.toFixed(2)}, Urdu: ${urduScore.toFixed(2)} | Verdict: ${isEnglish ? "ENGLISH" : "URDU/MIXED"}`);
+  const score = englishWordCount * 10 - romanUrduCount * 5;
 
-  return { isEnglish, isUrdu, score: engScore };
+  const result = { isEnglish, hasArabic, hasRomanUrdu, score, issues };
+
+  console.log(`[ANALYZER] Arabic: ${hasArabic} | English score: ${englishWordCount} | Roman Urdu markers: ${romanUrduCount}`);
+  console.log(`[ANALYZER] Issues: ${issues.length > 0 ? issues.join(", ") : "none"}`);
+  logger.info(`[ANALYZER] ${JSON.stringify(result)}`);
+
+  return result;
 }
 
 module.exports = { analyzeResponse };

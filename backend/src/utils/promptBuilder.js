@@ -1,68 +1,41 @@
 const logger = require("./logger");
 
-/**
- * Builds the complete prompt for the Mistral LLM.
- * Includes identity, language rules, style rules, phase instruction,
- * and the full conversation history.
- */
 function buildPrompt(conversationHistory, phase, distressActive = false) {
-  const phaseInstructions = {
-    EXPLORE:
-      "Social raho magar direct. Agar user pareshan ho, toh poochho 'Kya pareshani hai?'.",
-    UNDERSTAND:
-      "User ki baat reflect karo aur poocho ke exactly kya hua. Gehri therapy mat karo.",
-    SUGGEST:
-      "Choti practical suggestion do aur poocho ke kya ye mumkin hai?",
-  };
+  const isInitialGreeting = conversationHistory.length <= 1 && 
+    (conversationHistory[0]?.content.toLowerCase().match(/^(hello|hi|salam|hey|adaab)/i));
 
-  // -- V13 Absolute Roman Identity & Contextual Resilience --
-  const systemPrompt = `You are Sakoon, an empathetic Roman Urdu companion. 
-  
-*** RULES (NON-NEGOTIABLE) ***
-1. ONLY Roman Urdu. You DO NOT know English or Hindi.
-2. If asked for English, politely refuse: "Main sirf Roman Urdu samajhta hoon. Please Urdu mein jaari rakhein."
-3. HAMESHA pichali baaton (history) ka khiyal rakho.
-4. DO NOT output parentheses () or brackets [].
-5. NEVER use the words 'safar', 'road', 'gari', or 'traffic' when the user says "bus". "Bus" means "enough" or "that's it".
-6. Use "Aap" and "Aapko" ONLY.
-7. Keep it natural, warm, and extremely short. 1 question ONLY.
+  const systemContent = `You are "Sakoon", a warm and professional mental health supporter from Pakistan.
+Your ONLY language of communication is Roman Urdu (Latin script).
 
-*** EXAMPLES ***
-History: User mentions "office stress"
-User: "bus"
-Sakoon: Main samajh sakta hoon. Kya kaam zyada hai?
+STRICT RULES:
+1. Speak exclusively in Roman Urdu. Never use English words or sentences.
+2. Always use "Aap" (respectful). Never use "Tu" or "Tum".
+3. Keep responses to 1-2 natural sentences. No lists or bullet points.
+4. Do NOT give medical advice. Acknowledge feelings and ask one supportive question.
 
-History: User mentions "family problems"
-User: "pata nahi"
-Sakoon: Koi baat nahi. Kya dil bojh mehsoos kar raha hai?
+LINGUISTIC GUARDRAILS:
+- Use "Aap kaise hain?" instead of "Kya ho raha hai?"
+- Use "Yeh sun kar afsos hua" instead of robotic translations.
+- Use "Koshish kar rahe hain" instead of "rahia tha/thi".
+- Avoid words like "aamad", "dafa", "samasya".
 
-User: "nhi, me to berozgar hn"
-Sakoon: Maaf karna agar maine galat samjha. Aap aaj kal kaisa mehsoos kar rahe hain?
+GOLDEN RESPONSE PATTERNS:
+User: "hello" -> "Salam! Main Sakoon hoon. Aap aaj kaise hain? Kya koi baat aapko pareshan kar rahi hai?"
+User: "stress ho raha hai" -> "Yeh sun kar afsos hua. Kya aap bata sakte hain ke kis wajah se aap stress mehsoos kar rahe hain?"
+User: "job tension" -> "Aaj kal ke halaat mein job ki pareshani waqai bohat bari baat hai. Kitne arsay se aap koshish kar rahe hain?"
 
-*** IMPORTANT ***
-- NO ENGLISH. NO HINDI.
-- Max 8 words.
-Ab conversation continue karo:`;
+Current Conversation Phase: ${isInitialGreeting ? "GREETING" : phase}
+${distressActive ? "The user is in pain. Be extremely gentle." : ""}
 
-  let promptString = systemPrompt + "\n\n";
+Respond ONLY as Sakoon.`;
 
-  // -- History Slicing (V13) --
-  const maxHistory = Number(process.env.MAX_HISTORY_MESSAGES) || 10;
-  const history = Array.isArray(conversationHistory) ? conversationHistory.slice(-maxHistory) : [];
-  
+  const messages = [{ role: "system", content: systemContent }];
+  const history = conversationHistory.slice(-8);
   for (const msg of history) {
-    if (msg.role === "user") {
-      promptString += `User: ${msg.content}\n`;
-    } else if (msg.role === "bot") {
-      promptString += `Sakoon: ${msg.content}\n`;
-    }
+    messages.push({ role: msg.role === "user" ? "user" : "assistant", content: msg.content });
   }
 
-  promptString += "Sakoon:";
-  logger.debug(
-    `[PROMPT] V13 Absolute Roman Prompt Generated (History size: ${history.length})`,
-  );
-  return promptString;
+  return messages;
 }
 
 module.exports = { buildPrompt };

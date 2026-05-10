@@ -145,18 +145,18 @@ body {
 
 /* ── Inputs & Placeholders ── */
 ::placeholder {
-  color: var(--text-muted);
-  opacity: 1;
+  color: var(--text-muted) !important;
+  opacity: 0.7 !important;
 }
 ::-webkit-input-placeholder {
-  color: var(--text-muted);
+  color: var(--text-muted) !important;
 }
 ::-moz-placeholder {
-  color: var(--text-muted);
-  opacity: 1;
+  color: var(--text-muted) !important;
+  opacity: 0.7 !important;
 }
 :-ms-input-placeholder {
-  color: var(--text-muted);
+  color: var(--text-muted) !important;
 }
 
 /* ── Scrollbar ── */
