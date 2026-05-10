@@ -8,14 +8,15 @@ function cleanResponse(text) {
   // 1. Remove Arabic script
   cleaned = cleaned.replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g, "").trim();
 
-  // 2. Fix specific linguistic hallucinations (Hallucination Catch)
+  // 2. Hallucination Guard
   const replacements = [
     { bad: /aamad/gi, good: "pareshani" },
     { bad: /dafa/gi, good: "baat" },
     { bad: /thak karke/gi, good: "thaka kar" },
     { bad: /rahia tha/gi, good: "raha tha" },
     { bad: /rahia thi/gi, good: "rahi thi" },
-    { bad: /muh batana/gi, good: "samajhna" }
+    { bad: /dimaag daba رہا/gi, good: "bojh mehsoos ho raha" },
+    { bad: /chinta/gi, good: "pareshani" }
   ];
   for (const r of replacements) {
     cleaned = cleaned.replace(r.bad, r.good);
@@ -27,22 +28,21 @@ function cleanResponse(text) {
     cleaned = cleaned.replace(m, "");
   }
 
-  // 4. Sentence-level English strip
-  let sentences = cleaned.match(/[^.!?]+[.!?]+/g) || [cleaned];
-  sentences = sentences.filter(s => {
-    const raw = s.trim().toLowerCase();
-    const engWords = ["the", "is", "of", "to", "and", "it", "that", "this", "be", "was", "with"];
-    const words = raw.split(/\s+/);
-    const engCount = words.filter(w => engWords.includes(w)).length;
-    return (engCount / words.length) < 0.3;
-  });
+  // 4. Robust Sentence Splitter (Doesn't lose the "tail")
+  // We split by punctuation but we keep the delimiters
+  const segments = cleaned.split(/([.!?]+)/g);
+  let pieces = [];
+  for (let i = 0; i < segments.length; i += 2) {
+    let s = segments[i] || "";
+    let p = segments[i+1] || "";
+    if (s.trim()) pieces.push(s + p);
+  }
 
-  cleaned = sentences.join(" ").trim();
-
-  // 5. Final limit to 2 sentences
-  const finalSentences = cleaned.match(/[^.!?]+[.!?]+/g) || [cleaned];
-  if (finalSentences.length > 2) {
-    cleaned = finalSentences.slice(0, 2).join(" ");
+  // 5. Limit to 4 sentences max (Safe for Greetings)
+  if (pieces.length > 4) {
+    cleaned = pieces.slice(0, 4).join(" ");
+  } else {
+    cleaned = pieces.join(" ");
   }
 
   return cleaned.trim();

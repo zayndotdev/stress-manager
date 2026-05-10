@@ -11,19 +11,25 @@ const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.1:latest";
 const OLLAMA_TIMEOUT_MS = readNumberEnv("OLLAMA_TIMEOUT_MS", 180000); 
 
 const OLLAMA_OPTIONS = {
-  temperature: 0.7,  // Natural flow
-  top_p: 0.9,        // High quality
-  top_k: 40,         // Broad vocabulary
-  repeat_penalty: 1.1,
-  num_predict: 60,   // Fast and concise
-  num_ctx: 1024,     // Reduced memory usage for speed
+  temperature: 0.3,  // STABLE - No weird poetry
+  top_p: 0.5,        // FOCUSED - No linguistic drift
+  top_k: 40,
+  repeat_penalty: 1.2,
+  num_predict: 150,  // LENGTH - Finish the thought
+  num_ctx: 1024,
 };
 
 async function callChat(messages) {
   try {
     const response = await axios.post(
       `${OLLAMA_BASE}/api/chat`,
-      { model: OLLAMA_MODEL, messages, stream: false, options: OLLAMA_OPTIONS },
+      { 
+        model: OLLAMA_MODEL, 
+        messages, 
+        stream: false, 
+        options: OLLAMA_OPTIONS,
+        keep_alive: "60m" 
+      },
       { timeout: OLLAMA_TIMEOUT_MS }
     );
     return response.data?.message?.content?.trim() || "";
@@ -35,7 +41,13 @@ async function callChat(messages) {
 async function callChatStream(messages) {
   const response = await axios.post(
     `${OLLAMA_BASE}/api/chat`,
-    { model: OLLAMA_MODEL, messages, stream: true, options: OLLAMA_OPTIONS },
+    { 
+        model: OLLAMA_MODEL, 
+        messages, 
+        stream: true, 
+        options: OLLAMA_OPTIONS,
+        keep_alive: "60m" 
+    },
     { responseType: "stream", timeout: OLLAMA_TIMEOUT_MS }
   );
   return response.data;
@@ -43,12 +55,18 @@ async function callChatStream(messages) {
 
 async function warmUpModel() {
   try {
+    logger.info(`[OLLAMA] Stability-warming ${OLLAMA_MODEL}...`);
     await axios.post(`${OLLAMA_BASE}/api/chat`, {
         model: OLLAMA_MODEL,
-        messages: [{ role: "user", content: "hi" }],
+        messages: [
+            { role: "system", content: "You are Sakoon. Roman Urdu only. Stay professional." },
+            { role: "user", content: "hello" }
+        ],
         stream: false,
-        options: { num_predict: 5 },
-      }, { timeout: 60000 });
+        options: { num_predict: 1 },
+        keep_alive: "60m"
+      }, { timeout: 120000 });
+    logger.info(`[OLLAMA] ✅ System ready for stable chat.`);
   } catch (e) {}
 }
 
