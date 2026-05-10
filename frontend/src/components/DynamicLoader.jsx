@@ -1,115 +1,84 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
+import { Brain } from "lucide-react";
 import gsap from "gsap";
-import { Sparkles, Brain, Clock } from "lucide-react";
-
-const THINKING_MESSAGES = [
-  { text: "Sakoon aapki baat par ghor kar raha hai...", icon: Brain },
-  { text: "Gahrai se soch raha hoon...", icon: Clock },
-  { text: "Behtareen jawab tayar kar raha hoon...", icon: Sparkles }
-];
 
 const DynamicLoader = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const containerRef = useRef(null);
+  const iconRef = useRef(null);
   const textRef = useRef(null);
   const dotRef1 = useRef(null);
   const dotRef2 = useRef(null);
   const dotRef3 = useRef(null);
 
   useEffect(() => {
-    // Message rotation
-    const interval = setInterval(() => {
-      gsap.to(textRef.current, {
-        opacity: 0,
-        y: -10,
-        duration: 0.3,
-        onComplete: () => {
-          setCurrentIndex((prev) => (prev + 1) % THINKING_MESSAGES.length);
-          gsap.fromTo(
-            textRef.current,
-            { opacity: 0, y: 10 },
-            { opacity: 1, y: 0, duration: 0.3 }
-          );
-        }
-      });
-    }, 4000);
-
-    // Initial mount animation
-    gsap.fromTo(
-      containerRef.current,
-      { opacity: 0, scale: 0.95 },
-      { opacity: 1, scale: 1, duration: 0.4, ease: "power2.out" }
-    );
-
-    // Bouncing dots
-    gsap.to([dotRef1.current, dotRef2.current, dotRef3.current], {
-      y: -6,
-      stagger: {
-        each: 0.15,
-        repeat: -1,
-        yoyo: true,
-      },
-      ease: "sine.inOut",
-      duration: 0.6
+    // 1. Brain Icon "Breathing" Pulse
+    gsap.to(iconRef.current, {
+      scale: 1.15,
+      filter: "drop-shadow(0 0 12px var(--primary))",
+      duration: 1.2,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut"
     });
 
-    return () => {
-      clearInterval(interval);
-      gsap.killTweensOf([textRef.current, containerRef.current, dotRef1.current, dotRef2.current, dotRef3.current]);
-    };
-  }, []);
+    // 2. Text "Aura" Glow
+    gsap.to(textRef.current, {
+      opacity: 0.7,
+      duration: 1.2,
+      repeat: -1,
+      yoyo: true,
+      ease: "sine.inOut"
+    });
 
-  const Icon = THINKING_MESSAGES[currentIndex].icon;
+    // 3. Jumping Dots (Typing Indicator)
+    const dots = [dotRef1.current, dotRef2.current, dotRef3.current];
+    gsap.to(dots, {
+      y: -5,
+      opacity: 1,
+      duration: 0.4,
+      stagger: 0.15,
+      repeat: -1,
+      yoyo: true,
+      ease: "power1.inOut"
+    });
+  }, []);
 
   return (
     <div 
-      ref={containerRef}
-      style={{
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 12,
-        marginBottom: 16,
-        maxWidth: "85%"
+      style={{ 
+        display: "flex", 
+        alignItems: "center", 
+        gap: 12, 
+        padding: "12px 20px",
+        background: "var(--bg-elevated)",
+        borderRadius: "16px",
+        border: "1px solid var(--border-default)",
+        width: "fit-content",
+        margin: "10px 0",
+        boxShadow: "var(--shadow-sm)"
       }}
     >
-      {/* Bot Avatar Placeholder */}
-      <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: 10,
-          background: "linear-gradient(135deg, var(--primary), var(--secondary))",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-          boxShadow: "0 2px 8px var(--primary-glow)",
-        }}
-      >
-        <span style={{ color: "white", fontSize: 14, fontWeight: "bold" }}>S</span>
+      <div ref={iconRef} style={{ color: "var(--primary)", display: "flex" }}>
+        <Brain size={20} />
       </div>
-
-      <div
-        className="glass-panel"
-        style={{
-          padding: "12px 16px",
-          borderRadius: "4px 16px 16px 16px",
-          border: "1px solid var(--border-default)",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
-        <Icon size={16} color="var(--primary)" />
+      
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span 
+          ref={textRef}
+          style={{ 
+            fontSize: 14, 
+            fontWeight: 500, 
+            color: "var(--text-secondary)",
+            fontFamily: "var(--font-sans)"
+          }}
+        >
+          Sakoon soch raha hai
+        </span>
         
-        <div ref={textRef} style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 500 }}>
-          {THINKING_MESSAGES[currentIndex].text}
-        </div>
-
-        <div style={{ display: "flex", gap: 3, marginLeft: 8 }}>
-          <div ref={dotRef1} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--primary)" }} />
-          <div ref={dotRef2} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--primary)" }} />
-          <div ref={dotRef3} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--primary)" }} />
+        {/* Modern Jumping Dots */}
+        <div style={{ display: "flex", gap: 3, alignItems: "center", height: 14, paddingTop: 4 }}>
+          <div ref={dotRef1} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--primary)", opacity: 0.4 }} />
+          <div ref={dotRef2} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--primary)", opacity: 0.4 }} />
+          <div ref={dotRef3} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--primary)", opacity: 0.4 }} />
         </div>
       </div>
     </div>

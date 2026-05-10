@@ -292,8 +292,8 @@ const ConvItem = ({ conv, isCollapsed, isActive, onSelect, onDelete, onPin }) =>
           </div>
           {hovered && (
             <div style={{ display: "flex", gap: 2 }}>
-              <ActionBtn icon={<Pin size={11} />} onClick={(e) => { e.stopPropagation(); onPin(); }} title="Pin" />
-              <ActionBtn icon={<Trash2 size={11} />} onClick={(e) => { e.stopPropagation(); onDelete(); }} title="Delete" danger />
+              <ActionBtn icon={<Pin size={11} />} onClick={onPin} title="Pin" />
+              <ActionBtn icon={<Trash2 size={11} />} onClick={onDelete} title="Delete" danger />
             </div>
           )}
         </>
